@@ -1,48 +1,1501 @@
-
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ApexTrader</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-function toLogin(){
- var n=document.getElementById('loginName').value;
- if(n.length<2){alert('Enter your name');return;}
- localStorage.setItem('apex_name',n);
- document.getElementById('loginScreen').style.display='none';
- document.getElementById('mainApp').style.display='flex';
- document.getElementById('userNameTop').innerText=n;
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VORTEX FX Trading Terminal</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#071019;color:#e8eef5;overflow:hidden}
+button,input,select{font:inherit}
+.app{height:100vh;display:grid;grid-template-rows:56px 1fr 27px}
+
+.topbar{background:#0b151f;border-bottom:1px solid #24323e;display:flex;align-items:center;padding:0 14px;gap:20px}
+.logo{font-size:19px;font-weight:800;letter-spacing:.8px;white-space:nowrap}
+.logo span{color:#2da8ff}
+.account-mode{display:flex;gap:6px}
+.mode{border:1px solid #344453;background:#101c27;color:#aebdca;padding:7px 13px;border-radius:5px;cursor:pointer}
+.mode.active{background:#176da8;border-color:#2399e8;color:white}
+.top-account{margin-left:auto;display:flex;gap:22px;font-size:12px;color:#93a4b2}
+.top-account b{color:#fff}
+.menu-btn{border:0;background:transparent;color:#b9c7d2;font-size:20px;cursor:pointer}
+
+.main{min-height:0;display:grid;grid-template-columns:245px minmax(0,1fr) 300px}
+
+.market{background:#0a141d;border-right:1px solid #24323e;min-width:0}
+.panel-title{height:39px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #25343f;font-size:12px;font-weight:bold;color:#c8d4de}
+.market-head,.quote{display:grid;grid-template-columns:1.3fr .9fr .9fr;gap:5px;padding:7px 10px}
+.market-head{color:#6f8290;font-size:10px;text-transform:uppercase}
+.quote{border-bottom:1px solid #172630;cursor:pointer;font-size:11px}
+.quote:hover,.quote.selected{background:#122331}
+.symbol{font-weight:bold;color:#e9f1f6}
+.pair-name{display:block;color:#708391;font-size:9px;margin-top:2px}
+.bid{color:#ff7575}.ask{color:#62d99a}
+
+.center{min-width:0;min-height:0;display:grid;grid-template-rows:39px 1fr 190px}
+.chart-toolbar{background:#0b151e;border-bottom:1px solid #26343f;display:flex;align-items:center;gap:5px;padding:0 8px}
+.chart-symbol{font-size:14px;font-weight:bold;margin-right:8px}
+.tf{border:0;background:transparent;color:#7f919f;font-size:11px;padding:6px 7px;cursor:pointer}
+.tf.active{color:#fff;background:#17384e;border-radius:3px}
+.chart-actions{margin-left:auto;display:flex;gap:5px}
+.icon-btn{border:1px solid #293a47;background:#0f1b25;color:#aebbc5;width:30px;height:26px;border-radius:3px}
+
+.chart-wrap{min-height:0;position:relative;background:#071018;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+.chart-price{position:absolute;right:0;top:50%;transform:translateY(-50%);background:#1d75ad;color:#fff;padding:3px 7px;font-size:10px}
+.chart-header{position:absolute;left:12px;top:9px;z-index:3;font-size:11px;color:#95a7b4}
+.chart-header strong{color:#fff;font-size:14px}
+
+.terminal{background:#09131c;border-top:1px solid #24333f;overflow:auto}
+.tabs{height:34px;display:flex;border-bottom:1px solid #26343e}
+.tab{border:0;background:transparent;color:#778b99;padding:0 13px;cursor:pointer;font-size:11px}
+.tab.active{color:#fff;border-bottom:2px solid #2ca6f7}
+.positions{width:100%;border-collapse:collapse;font-size:10px}
+.positions th{text-align:left;color:#687c89;font-weight:normal;padding:7px;white-space:nowrap}
+.positions td{padding:6px 7px;border-top:1px solid #17252e;white-space:nowrap}
+.profit{color:#4ed28e}.loss{color:#ff7070}
+.close-position,.cancel-order{background:#17232d;border:1px solid #35434e;color:#d6e0e7;padding:3px 7px;border-radius:3px;cursor:pointer}
+.pending-row td{color:#aab8c2}
+
+.order{background:#0a151f;border-left:1px solid #24323e;min-width:0;overflow:auto}
+.order-section{padding:12px;border-bottom:1px solid #22313d}
+.order-title{font-size:12px;font-weight:bold;margin-bottom:11px}
+.current-pair{display:flex;justify-content:space-between;align-items:center}
+.current-pair strong{font-size:18px}
+.live-dot{width:7px;height:7px;background:#39d98a;border-radius:50%;display:inline-block;margin-right:5px}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field label{display:block;color:#718594;font-size:10px;margin-bottom:4px}
+.field input,.field select{width:100%;background:#0e1b25;border:1px solid #2b3b47;color:#fff;padding:8px;border-radius:3px;outline:none}
+.field input:focus,.field select:focus{border-color:#258fd0}
+.trade-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.buy,.sell{border:0;color:#fff;padding:11px 5px;border-radius:4px;cursor:pointer;font-weight:bold}
+.buy{background:#087d51}.sell{background:#a5363d}
+.buy:hover{background:#099966}.sell:hover{background:#c1434b}
+.big-price{display:block;font-size:14px;margin-top:3px}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px;color:#80929e}
+.info-row strong{color:#e5edf2}
+.order-note{font-size:10px;color:#718694;line-height:1.4;margin-top:8px}
+
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.account-card{background:#0e1a24;border:1px solid #20303b;padding:9px;border-radius:4px}
+.account-card small{color:#718594;font-size:9px}
+.account-card b{display:block;margin-top:4px;font-size:12px}
+
+.status{background:#09131b;border-top:1px solid #25333e;display:flex;align-items:center;padding:0 10px;color:#70818d;font-size:10px}
+.status .connected{color:#48d58c;margin-right:20px}
+
+@media(max-width:900px){
+body{overflow:auto}.app{height:auto;min-height:100vh}
+.main{grid-template-columns:1fr;display:block}.market{display:none}
+.center{height:650px}.order{border-left:0;border-top:1px solid #24323e}
+.top-account{display:none}.logo{font-size:15px}
 }
-function showPhase(p){
- document.querySelectorAll('.phase').forEach(e=>e.style.display='none');
- document.getElementById('phase-'+p).style.display='block';
-}
-</script>
+</style>
 </head>
-<body class="bg-black text-white">
-<div id="loginScreen" style="position:fixed;inset:0;background:black;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
- <div style="font-size:50px">₿↗</div><b style="font-size:24px;letter-spacing:3px">APEXTRADER</b>
- <p style="opacity:0.5;font-size:11px;margin:10px 0 20px">DEMO ONLY - Min KSh 500</p>
- <input id="loginName" placeholder="Amos Kimungetich" style="width:100%;background:#111;border:1px solid #333;padding:15px;border-radius:12px;color:white;margin-bottom:10px">
- <input id="loginEmail" placeholder="Email" style="width:100%;background:#111;border:1px solid #333;padding:15px;border-radius:12px;color:white;margin-bottom:20px">
- <button onclick="toLogin()" style="width:100%;background:white;color:black;padding:15px;border-radius:12px;font-weight:900">LOGIN →</button>
+
+<body>
+
+<div class="app">
+
+<header class="topbar">
+    <div class="logo">VORTEX <span>FX</span></div>
+
+    <div class="account-mode">
+        <button class="mode active" id="demoBtn" onclick="setMode('DEMO')">DEMO</button>
+        <button class="mode" id="realBtn" onclick="setMode('REAL')">REAL</button>
+    </div>
+
+    <div class="top-account">
+        <div>Balance <b id="topBalance">$10,000.00</b></div>
+        <div>Equity <b id="topEquity">$10,000.00</b></div>
+        <div>Free Margin <b id="topFree">$10,000.00</b></div>
+    </div>
+
+    <button class="menu-btn">☰</button>
+</header>
+
+<main class="main">
+
+<section class="market">
+    <div class="panel-title">MARKET WATCH</div>
+
+    <div class="market-head">
+        <div>Symbol</div><div>Bid</div><div>Ask</div>
+    </div>
+
+    <div id="quotes"></div>
+</section>
+
+<section class="center">
+
+    <div class="chart-toolbar">
+        <div class="chart-symbol" id="chartSymbol">EURUSD</div>
+
+        <button class="tf active" onclick="setTF(this,'M1')">M1</button>
+        <button class="tf" onclick="setTF(this,'M5')">M5</button>
+        <button class="tf" onclick="setTF(this,'M15')">M15</button>
+        <button class="tf" onclick="setTF(this,'M30')">M30</button>
+        <button class="tf" onclick="setTF(this,'H1')">H1</button>
+        <button class="tf" onclick="setTF(this,'H4')">H4</button>
+        <button class="tf" onclick="setTF(this,'D1')">D1</button>
+
+        <div class="chart-actions">
+            <button class="icon-btn">＋</button>
+            <button class="icon-btn">⌕</button>
+            <button class="icon-btn">⚙</button>
+        </div>
+    </div>
+
+    <div class="chart-wrap">
+        <div class="chart-header">
+            <strong id="chartPair">EUR/USD</strong>
+            <span id="chartStats"> · M1 · DEMO</span>
+        </div>
+        <canvas id="chart"></canvas>
+        <div class="chart-price" id="chartPrice">1.08420</div>
+    </div>
+
+    <div class="terminal">
+
+        <div class="tabs">
+            <button class="tab active">Trade</button>
+            <button class="tab">Exposure</button>
+            <button class="tab">History</button>
+            <button class="tab">Journal</button>
+        </div>
+
+        <table class="positions">
+            <thead>
+                <tr id="tradeHeader">
+                    <th>Ticket</th>
+                    <th>Symbol</th>
+                    <th>Type</th>
+                    <th>Volume</th>
+                    <th>Open</th>
+                    <th>Current</th>
+                    <th>SL</th>
+                    <th>TP</th>
+                    <th>Profit</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="positions"></tbody>
+        </table>
+
+    </div>
+</section>
+
+<aside class="order">
+
+    <div class="order-section">
+
+        <div class="current-pair">
+            <div>
+                <span class="live-dot"></span>
+                <strong id="orderSymbol">EUR/USD</strong>
+            </div>
+            <span style="font-size:10px;color:#50d996">MARKET</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+
+            <div style="background:#241318;padding:9px;text-align:center;border-radius:4px">
+                <small style="color:#9b777b">SELL / BID</small>
+                <strong id="sellPrice" class="big-price" style="color:#ff7777">1.08410</strong>
+            </div>
+
+            <div style="background:#10241d;padding:9px;text-align:center;border-radius:4px">
+                <small style="color:#759789">BUY / ASK</small>
+                <strong id="buyPrice" class="big-price" style="color:#5be09b">1.08420</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="order-section">
+
+        <div class="order-title">New Order</div>
+
+        <div class="field" style="margin-bottom:9px">
+            <label>Symbol</label>
+            <select id="orderSelect" onchange="selectPair(this.value)"></select>
+        </div>
+
+        <div class="inputs">
+
+            <div class="field">
+                <label>Volume / Lots</label>
+                <input id="lots" type="number" value="0.10" min="0.01" step="0.01">
+            </div>
+
+            <div class="field">
+                <label>Order Type</label>
+                <select id="orderType" onchange="orderTypeChanged()">
+                    <option value="MARKET">Market Execution</option>
+                    <option value="BUY_LIMIT">Buy Limit</option>
+                    <option value="SELL_LIMIT">Sell Limit</option>
+                    <option value="BUY_STOP">Buy Stop</option>
+                    <option value="SELL_STOP">Sell Stop</option>
+                </select>
+            </div>
+
+            <div class="field" id="entryField" style="grid-column:1/-1;display:none">
+                <label>Entry Price</label>
+                <input id="entryPrice" type="number" step="0.00001">
+            </div>
+
+            <div class="field">
+                <label>Stop Loss</label>
+                <input id="sl" type="number" step="0.00001" placeholder="Optional">
+            </div>
+
+            <div class="field">
+                <label>Take Profit</label>
+                <input id="tp" type="number" step="0.00001" placeholder="Optional">
+            </div>
+
+        </div>
+
+        <div class="trade-buttons">
+
+            <button class="sell" onclick="submitOrder('SELL')">
+                SELL
+                <span class="big-price" id="sellButtonPrice">1.08410</span>
+            </button>
+
+            <button class="buy" onclick="submitOrder('BUY')">
+                BUY
+                <span class="big-price" id="buyButtonPrice">1.08420</span>
+            </button>
+
+        </div>
+
+        <div class="info-row">
+            <span>Spread</span>
+            <strong id="spread">1.0 pips</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Estimated Margin</span>
+            <strong id="margin">$108.42</strong>
+        </div>
+
+        <div class="order-note" id="orderHelp">
+            Market Execution opens immediately at the current Bid/Ask price.
+        </div>
+
+    </div>
+
+    <div class="order-section">
+
+        <div class="order-title">Account</div>
+
+        <div class="account-grid">
+
+            <div class="account-card">
+                <small>Balance</small>
+                <b id="balance">$10,000.00</b>
+            </div>
+
+            <div class="account-card">
+                <small>Equity</small>
+                <b id="equity">$10,000.00</b>
+            </div>
+
+            <div class="account-card">
+                <small>Used Margin</small>
+                <b id="usedMargin">$0.00</b>
+            </div>
+
+            <div class="account-card">
+                <small>Free Margin</small>
+                <b id="freeMargin">$10,000.00</b>
+            </div>
+
+            <div class="account-card">
+                <small>Floating P/L</small>
+                <b id="floating">$0.00</b>
+            </div>
+
+            <div class="account-card">
+                <small>Margin Level</small>
+                <b id="marginLevel">∞</b>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="order-section">
+
+        <div class="order-title">Trading Information</div>
+
+        <div class="info-row"><span>Market</span><strong>Forex</strong></div>
+        <div class="info-row"><span>Leverage</span><strong>1:100</strong></div>
+        <div class="info-row"><span>Contract Size</span><strong>100,000</strong></div>
+        <div class="info-row"><span>Trading Mode</span><strong id="tradingMode">DEMO</strong></div>
+
+    </div>
+
+</aside>
+
+</main>
+
+<footer class="status">
+    <span class="connected">● Connected</span>
+    <span>Demo prices are simulated locally</span>
+    <span style="margin-left:auto" id="clock"></span>
+</footer>
+
 </div>
 
-<div id="mainApp" style="display:none;flex-direction:column;min-height:100vh;max-width:430px;margin:0 auto">
- <div style="padding:15px;background:#111;display:flex;justify-content:space-between"><b id="userNameTop">Guest</b><span>KSh 1,000</span></div>
- <div id="phase-market" class="phase" style="padding:15px;flex:1"><h2>Popular Markets</h2><div style="margin-top:15px">
-  <div style="background:#111;padding:15px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between"><span>XAUUSD 4424</span><span style="color:#22c55e">▲ BUY</span></div>
-  <div style="background:#111;padding:15px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between"><span>BTCUSD 79842</span><span style="color:#ef4444">▼ SELL</span></div>
-  <div style="background:#111;padding:15px;border-radius:10px">EURUSD 1.1611</div>
- </div></div>
- <div id="phase-more" class="phase" style="display:none;padding:15px"><h2>More</h2>
-  <button onclick="alert('Economic Calendar - NFP Today 3:30 PM High')" style="width:100%;background:#0a84ff;padding:15px;border-radius:12px;margin-top:10px;text-align:left">📅 Economic Calendar</button>
-  <button onclick="alert('Profile: '+localStorage.getItem('apex_name'))" style="width:100%;background:#222;padding:15px;border-radius:12px;margin-top:10px;text-align:left">👤 Profile & Security</button>
-  <button onclick="alert('Settings - Dark mode ON')" style="width:100%;background:#222;padding:15px;border-radius:12px;margin-top:10px;text-align:left">⚙️ App settings</button>
-  <button onclick="alert('Live chat - Min deposit KSh 500')" style="width:100%;background:#222;padding:15px;border-radius:12px;margin-top:10px;text-align:left">🎧 Live Chat</button>
-  <button onclick="localStorage.clear();location.reload()" style="width:100%;background:#222;padding:15px;border-radius:12px;margin-top:10px">Logout</button>
- </div>
- <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #222;padding:10px 0;text-align:center;font-size:12px">
-  <button onclick="showPhase('market')">📈<br>Trade</button><button onclick="showPhase('market')">📋<br>Positions</button><button onclick="showPhase('market')">💰<br>Funds</button><button onclick="showPhase('more')">⋯<br>More</button>
- </div>
-</div>
-</body></html>
+<script>
+
+/* =========================================================
+   SYMBOLS
+========================================================= */
+
+const symbols={
+    EURUSD:{name:"EUR/USD",price:1.08420,digits:5,spread:0.00010},
+    GBPUSD:{name:"GBP/USD",price:1.29340,digits:5,spread:0.00012},
+    USDJPY:{name:"USD/JPY",price:149.420,digits:3,spread:0.012},
+    USDCHF:{name:"USD/CHF",price:0.84210,digits:5,spread:0.00010},
+    AUDUSD:{name:"AUD/USD",price:0.66230,digits:5,spread:0.00010},
+    USDCAD:{name:"USD/CAD",price:1.34780,digits:5,spread:0.00012},
+    NZDUSD:{name:"NZD/USD",price:0.61740,digits:5,spread:0.00010},
+    XAUUSD:{name:"XAU/USD",price:2652.40,digits:2,spread:0.30}
+};
+
+let selected="EURUSD";
+let timeframe="M1";
+let mode="DEMO";
+let balance=10000;
+let ticket=100001;
+
+/* Live positions */
+let positions=[];
+
+/* Pending limit/stop orders */
+let pendingOrders=[];
+
+/* Closed trade history */
+let history=[];
+
+
+/* =========================================================
+   PRICE HELPERS
+========================================================= */
+
+function bid(symbol){
+    return symbols[symbol].price-symbols[symbol].spread/2;
+}
+
+function ask(symbol){
+    return symbols[symbol].price+symbols[symbol].spread/2;
+}
+
+function price(symbol,value){
+    return Number(value).toFixed(symbols[symbol].digits);
+}
+
+function pipSize(symbol){
+    return symbols[symbol].digits===3 ? 0.01 : 0.0001;
+}
+
+
+/* =========================================================
+   MARKET WATCH
+========================================================= */
+
+function renderQuotes(){
+
+    const box=document.getElementById("quotes");
+    box.innerHTML="";
+
+    Object.keys(symbols).forEach(symbol=>{
+
+        const s=symbols[symbol];
+
+        const div=document.createElement("div");
+        div.className="quote "+(symbol===selected?"selected":"");
+        div.onclick=()=>selectPair(symbol);
+
+        div.innerHTML=`
+            <div>
+                <span class="symbol">${symbol}</span>
+                <span class="pair-name">${s.name}</span>
+            </div>
+            <div class="bid">${price(symbol,bid(symbol))}</div>
+            <div class="ask">${price(symbol,ask(symbol))}</div>
+        `;
+
+        box.appendChild(div);
+    });
+}
+
+
+/* =========================================================
+   SELECT SYMBOL
+========================================================= */
+
+function selectPair(symbol){
+
+    selected=symbol;
+
+    document.getElementById("chartSymbol").textContent=symbol;
+    document.getElementById("chartPair").textContent=symbols[symbol].name;
+    document.getElementById("orderSymbol").textContent=symbols[symbol].name;
+
+    document.getElementById("orderSelect").value=symbol;
+
+    updateOrderPanel();
+    renderQuotes();
+    generateCandles();
+}
+
+
+/* =========================================================
+   ORDER SELECT
+========================================================= */
+
+function buildOrderSelect(){
+
+    const select=document.getElementById("orderSelect");
+
+    Object.keys(symbols).forEach(symbol=>{
+
+        const option=document.createElement("option");
+
+        option.value=symbol;
+        option.textContent=symbols[symbol].name;
+
+        select.appendChild(option);
+    });
+
+    select.value=selected;
+}
+
+
+/* =========================================================
+   ORDER TYPE UI
+========================================================= */
+
+function orderTypeChanged(){
+
+    const type=document.getElementById("orderType").value;
+    const entryField=document.getElementById("entryField");
+    const entry=document.getElementById("entryPrice");
+    const help=document.getElementById("orderHelp");
+
+    if(type==="MARKET"){
+
+        entryField.style.display="none";
+
+        help.textContent=
+            "Market Execution opens immediately at the current Bid/Ask price.";
+
+        return;
+    }
+
+    entryField.style.display="block";
+
+    const b=bid(selected);
+    const a=ask(selected);
+
+    if(type==="BUY_LIMIT"){
+
+        entry.value=price(selected,b-pipSize(selected)*10);
+
+        help.textContent=
+            "Buy Limit: executes when the Ask falls to or below your entry price.";
+
+    }
+
+    if(type==="SELL_LIMIT"){
+
+        entry.value=price(selected,a+pipSize(selected)*10);
+
+        help.textContent=
+            "Sell Limit: executes when the Bid rises to or above your entry price.";
+
+    }
+
+    if(type==="BUY_STOP"){
+
+        entry.value=price(selected,a+pipSize(selected)*10);
+
+        help.textContent=
+            "Buy Stop: executes when the Ask rises to or above your entry price.";
+
+    }
+
+    if(type==="SELL_STOP"){
+
+        entry.value=price(selected,b-pipSize(selected)*10);
+
+        help.textContent=
+            "Sell Stop: executes when the Bid falls to or below your entry price.";
+
+    }
+}
+
+
+/* =========================================================
+   ORDER PANEL
+========================================================= */
+
+function updateOrderPanel(){
+
+    const s=symbols[selected];
+
+    const b=bid(selected);
+    const a=ask(selected);
+
+    document.getElementById("sellPrice").textContent=price(selected,b);
+    document.getElementById("buyPrice").textContent=price(selected,a);
+    document.getElementById("sellButtonPrice").textContent=price(selected,b);
+    document.getElementById("buyButtonPrice").textContent=price(selected,a);
+    document.getElementById("chartPrice").textContent=price(selected,s.price);
+
+    const spread=(s.spread/pipSize(selected)).toFixed(1);
+
+    document.getElementById("spread").textContent=spread+" pips";
+
+    const lots=parseFloat(document.getElementById("lots").value)||0.10;
+
+    const margin=(a*100000*lots/100).toFixed(2);
+
+    document.getElementById("margin").textContent="$"+margin;
+}
+
+
+/* =========================================================
+   SUBMIT ORDER
+========================================================= */
+
+function submitOrder(side){
+
+    if(mode==="REAL"){
+
+        alert(
+            "REAL MODE\n\n"+
+            "No broker API is connected.\n"+
+            "This order has NOT been sent to a real broker."
+        );
+
+        return;
+    }
+
+    const orderType=document.getElementById("orderType").value;
+
+    const lots=parseFloat(document.getElementById("lots").value);
+
+    if(!lots || lots<=0){
+
+        alert("Enter a valid lot size.");
+        return;
+    }
+
+    const slValue=parseFloat(document.getElementById("sl").value);
+    const tpValue=parseFloat(document.getElementById("tp").value);
+
+    const sl=Number.isFinite(slValue)?slValue:null;
+    const tp=Number.isFinite(tpValue)?tpValue:null;
+
+    /*
+       Market order
+    */
+
+    if(orderType==="MARKET"){
+
+        executeMarketOrder(side,lots,sl,tp);
+        return;
+    }
+
+    /*
+       Pending orders have a required entry price.
+    */
+
+    const entry=parseFloat(
+        document.getElementById("entryPrice").value
+    );
+
+    if(!Number.isFinite(entry) || entry<=0){
+
+        alert("Enter a valid entry price.");
+        return;
+    }
+
+    if(!validatePendingOrder(orderType,entry)) return;
+
+    const margin=estimateMargin(entry,lots);
+
+    if(margin>getFreeMargin()){
+
+        alert("Not enough free margin for this pending order.");
+        return;
+    }
+
+    pendingOrders.push({
+
+        ticket:ticket++,
+        symbol:selected,
+        type:orderType,
+        side:side,
+        lots:lots,
+        entry:entry,
+        sl:sl,
+        tp:tp,
+        margin:margin,
+        created:new Date()
+
+    });
+
+    renderPositions();
+    updateAccount();
+
+}
+
+
+/* =========================================================
+   VALIDATE LIMIT / STOP
+========================================================= */
+
+function validatePendingOrder(type,entry){
+
+    const b=bid(selected);
+    const a=ask(selected);
+
+    if(type==="BUY_LIMIT" && entry>=a){
+
+        alert("Buy Limit must be below the current Ask price.");
+        return false;
+    }
+
+    if(type==="SELL_LIMIT" && entry<=b){
+
+        alert("Sell Limit must be above the current Bid price.");
+        return false;
+    }
+
+    if(type==="BUY_STOP" && entry<=a){
+
+        alert("Buy Stop must be above the current Ask price.");
+        return false;
+    }
+
+    if(type==="SELL_STOP" && entry>=b){
+
+        alert("Sell Stop must be below the current Bid price.");
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   MARKET EXECUTION
+========================================================= */
+
+function executeMarketOrder(side,lots,sl,tp){
+
+    const entry=side==="BUY"
+        ? ask(selected)
+        : bid(selected);
+
+    const margin=estimateMargin(entry,lots);
+
+    if(margin>getFreeMargin()){
+
+        alert("Not enough free margin.");
+        return;
+    }
+
+    positions.push({
+
+        ticket:ticket++,
+        symbol:selected,
+        type:side,
+        lots:lots,
+        entry:entry,
+        sl:sl,
+        tp:tp,
+        margin:margin,
+        profit:0,
+        opened:new Date()
+
+    });
+
+    renderPositions();
+    updateAccount();
+}
+
+
+/* =========================================================
+   ESTIMATED MARGIN
+========================================================= */
+
+function estimateMargin(entry,lots){
+
+    /*
+       Simplified demo calculation using 1:100 leverage.
+    */
+
+    return entry*100000*lots/100;
+}
+
+
+/* =========================================================
+   CHECK PENDING ORDERS
+========================================================= */
+
+function processPendingOrders(){
+
+    if(mode!=="DEMO") return;
+
+    for(let i=pendingOrders.length-1;i>=0;i--){
+
+        const p=pendingOrders[i];
+
+        const b=bid(p.symbol);
+        const a=ask(p.symbol);
+
+        let triggered=false;
+
+        /*
+           Buy Limit:
+           Ask reaches entry from above.
+        */
+
+        if(p.type==="BUY_LIMIT" && a<=p.entry)
+            triggered=true;
+
+        /*
+           Sell Limit:
+           Bid reaches entry from below.
+        */
+
+        if(p.type==="SELL_LIMIT" && b>=p.entry)
+            triggered=true;
+
+        /*
+           Buy Stop:
+           Ask rises to entry.
+        */
+
+        if(p.type==="BUY_STOP" && a>=p.entry)
+            triggered=true;
+
+        /*
+           Sell Stop:
+           Bid falls to entry.
+        */
+
+        if(p.type==="SELL_STOP" && b<=p.entry)
+            triggered=true;
+
+        if(triggered){
+
+            const executionPrice=
+                p.side==="BUY" ? a : b;
+
+            positions.push({
+
+                ticket:p.ticket,
+                symbol:p.symbol,
+                type:p.side,
+                lots:p.lots,
+                entry:executionPrice,
+                requestedEntry:p.entry,
+                sl:p.sl,
+                tp:p.tp,
+                margin:p.margin,
+                profit:0,
+                opened:new Date(),
+                fromPending:true
+
+            });
+
+            pendingOrders.splice(i,1);
+        }
+    }
+}
+
+
+/* =========================================================
+   POSITION PROFIT
+========================================================= */
+
+function calculateProfit(p){
+
+    const current=p.type==="BUY"
+        ? bid(p.symbol)
+        : ask(p.symbol);
+
+    const difference=p.type==="BUY"
+        ? current-p.entry
+        : p.entry-current;
+
+    let multiplier;
+
+    if(p.symbol==="USDJPY")
+        multiplier=1000;
+    else if(p.symbol==="XAUUSD")
+        multiplier=100;
+    else
+        multiplier=100000;
+
+    return difference*multiplier*p.lots;
+}
+
+
+/* =========================================================
+   STOP LOSS / TAKE PROFIT
+========================================================= */
+
+function processStopsAndTargets(){
+
+    if(mode!=="DEMO") return;
+
+    for(let i=positions.length-1;i>=0;i--){
+
+        const p=positions[i];
+
+        const b=bid(p.symbol);
+        const a=ask(p.symbol);
+
+        let closeReason=null;
+        let closePrice=null;
+
+        /*
+           BUY:
+           SL is triggered by Bid.
+           TP is triggered by Bid.
+        */
+
+        if(p.type==="BUY"){
+
+            if(p.sl!==null && b<=p.sl){
+
+                closeReason="Stop Loss";
+                closePrice=b;
+            }
+
+            if(p.tp!==null && b>=p.tp){
+
+                closeReason="Take Profit";
+                closePrice=b;
+            }
+        }
+
+        /*
+           SELL:
+           SL is triggered by Ask.
+           TP is triggered by Ask.
+        */
+
+        if(p.type==="SELL"){
+
+            if(p.sl!==null && a>=p.sl){
+
+                closeReason="Stop Loss";
+                closePrice=a;
+            }
+
+            if(p.tp!==null && a<=p.tp){
+
+                closeReason="Take Profit";
+                closePrice=a;
+            }
+        }
+
+        if(closeReason){
+
+            const profit=calculateProfit(p);
+
+            balance+=profit;
+
+            history.push({
+
+                ...p,
+                closePrice:closePrice,
+                closeReason:closeReason,
+                profit:profit,
+                closed:new Date()
+
+            });
+
+            positions.splice(i,1);
+        }
+    }
+}
+
+
+/* =========================================================
+   CLOSE MANUALLY
+========================================================= */
+
+function closePosition(index){
+
+    if(mode==="REAL"){
+
+        alert("Real broker connection is not configured.");
+        return;
+    }
+
+    const p=positions[index];
+
+    const profit=calculateProfit(p);
+
+    balance+=profit;
+
+    history.push({
+
+        ...p,
+        closePrice:p.type==="BUY"
+            ?bid(p.symbol)
+            :ask(p.symbol),
+
+        closeReason:"Manual Close",
+        profit:profit,
+        closed:new Date()
+
+    });
+
+    positions.splice(index,1);
+
+    renderPositions();
+    updateAccount();
+}
+
+
+/* =========================================================
+   CANCEL PENDING ORDER
+========================================================= */
+
+function cancelPending(index){
+
+    if(mode==="REAL"){
+
+        alert("Real broker connection is not configured.");
+        return;
+    }
+
+    pendingOrders.splice(index,1);
+
+    renderPositions();
+    updateAccount();
+}
+
+
+/* =========================================================
+   RENDER POSITIONS + PENDING ORDERS
+========================================================= */
+
+function renderPositions(){
+
+    const body=document.getElementById("positions");
+
+    body.innerHTML="";
+
+    /*
+       LIVE POSITIONS
+    */
+
+    positions.forEach((p,index)=>{
+
+        const current=
+            p.type==="BUY"
+            ?bid(p.symbol)
+            :ask(p.symbol);
+
+        p.profit=calculateProfit(p);
+
+        const tr=document.createElement("tr");
+
+        tr.innerHTML=`
+            <td>${p.ticket}</td>
+            <td>${p.symbol}</td>
+            <td class="${p.type==="BUY"?"profit":"loss"}">${p.type}</td>
+            <td>${p.lots.toFixed(2)}</td>
+            <td>${price(p.symbol,p.entry)}</td>
+            <td>${price(p.symbol,current)}</td>
+            <td>${p.sl!==null?p.sl:"—"}</td>
+            <td>${p.tp!==null?p.tp:"—"}</td>
+            <td class="${p.profit>=0?"profit":"loss"}">
+                ${p.profit>=0?"+":""}$${p.profit.toFixed(2)}
+            </td>
+            <td>
+                <button class="close-position"
+                    onclick="closePosition(${index})">
+                    Close
+                </button>
+            </td>
+        `;
+
+        body.appendChild(tr);
+    });
+
+
+    /*
+       PENDING ORDERS
+    */
+
+    pendingOrders.forEach((p,index)=>{
+
+        const tr=document.createElement("tr");
+
+        tr.className="pending-row";
+
+        tr.innerHTML=`
+            <td>${p.ticket}</td>
+            <td>${p.symbol}</td>
+            <td>${p.type}</td>
+            <td>${p.lots.toFixed(2)}</td>
+            <td>${price(p.symbol,p.entry)}</td>
+            <td>Pending</td>
+            <td>${p.sl!==null?p.sl:"—"}</td>
+            <td>${p.tp!==null?p.tp:"—"}</td>
+            <td>—</td>
+            <td>
+                <button class="cancel-order"
+                    onclick="cancelPending(${index})">
+                    Cancel
+                </button>
+            </td>
+        `;
+
+        body.appendChild(tr);
+    });
+
+}
+
+
+/* =========================================================
+   ACCOUNT
+========================================================= */
+
+function getFloating(){
+
+    return positions.reduce(
+        (total,p)=>total+calculateProfit(p),
+        0
+    );
+}
+
+function getUsedMargin(){
+
+    return positions.reduce(
+        (total,p)=>total+p.margin,
+        0
+    );
+}
+
+function getPendingMargin(){
+
+    return pendingOrders.reduce(
+        (total,p)=>total+p.margin,
+        0
+    );
+}
+
+function getFreeMargin(){
+
+    return balance+
+        getFloating()-
+        getUsedMargin()-
+        getPendingMargin();
+}
+
+function updateAccount(){
+
+    const floating=getFloating();
+
+    const equity=balance+floating;
+
+    const used=getUsedMargin();
+
+    const reserved=getPendingMargin();
+
+    const free=equity-used-reserved;
+
+    const marginLevel=used>0
+        ?(equity/used*100).toFixed(1)+"%"
+        :"∞";
+
+    document.getElementById("balance").textContent=
+        "$"+balance.toFixed(2);
+
+    document.getElementById("equity").textContent=
+        "$"+equity.toFixed(2);
+
+    document.getElementById("usedMargin").textContent=
+        "$"+(used+reserved).toFixed(2);
+
+    document.getElementById("freeMargin").textContent=
+        "$"+free.toFixed(2);
+
+    const floatingEl=document.getElementById("floating");
+
+    floatingEl.textContent=
+        (floating>=0?"+":"-")+
+        "$"+Math.abs(floating).toFixed(2);
+
+    floatingEl.className=
+        floating>=0?"profit":"loss";
+
+    document.getElementById("marginLevel").textContent=
+        marginLevel;
+
+    document.getElementById("topBalance").textContent=
+        "$"+balance.toFixed(2);
+
+    document.getElementById("topEquity").textContent=
+        "$"+equity.toFixed(2);
+
+    document.getElementById("topFree").textContent=
+        "$"+free.toFixed(2);
+}
+
+
+/* =========================================================
+   SIMULATED MARKET
+========================================================= */
+
+function moveMarkets(){
+
+    Object.keys(symbols).forEach(symbol=>{
+
+        const s=symbols[symbol];
+
+        let volatility;
+
+        if(symbol==="XAUUSD")
+            volatility=0.8;
+        else if(symbol==="USDJPY")
+            volatility=0.018;
+        else
+            volatility=0.00018;
+
+        const movement=
+            (Math.random()-0.5)*volatility;
+
+        s.price+=movement;
+
+        if(s.price<=0)
+            s.price-=movement;
+    });
+
+
+    /*
+       Order engine runs AFTER prices move.
+    */
+
+    processPendingOrders();
+    processStopsAndTargets();
+
+    renderQuotes();
+    updateOrderPanel();
+    renderPositions();
+    updateAccount();
+
+    drawChart();
+}
+
+
+/* =========================================================
+   CANDLES
+========================================================= */
+
+let candles=[];
+
+function generateCandles(){
+
+    candles=[];
+
+    let priceValue=symbols[selected].price;
+
+    let volatility=
+        selected==="XAUUSD"
+        ?2.5
+        :selected==="USDJPY"
+        ?0.08
+        :0.0008;
+
+    for(let i=0;i<100;i++){
+
+        const open=priceValue;
+
+        const close=
+            open+(Math.random()-.48)*volatility;
+
+        const high=
+            Math.max(open,close)+Math.random()*volatility;
+
+        const low=
+            Math.min(open,close)-Math.random()*volatility;
+
+        candles.push({
+            open,
+            high,
+            low,
+            close
+        });
+
+        priceValue=close;
+    }
+}
+
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+const canvas=document.getElementById("chart");
+const ctx=canvas.getContext("2d");
+
+function resizeCanvas(){
+
+    canvas.width=canvas.clientWidth*devicePixelRatio;
+    canvas.height=canvas.clientHeight*devicePixelRatio;
+
+    ctx.setTransform(
+        devicePixelRatio,0,0,devicePixelRatio,0,0
+    );
+
+    drawChart();
+}
+
+window.addEventListener("resize",resizeCanvas);
+
+
+function drawChart(){
+
+    if(!candles.length)return;
+
+    const w=canvas.clientWidth;
+    const h=canvas.clientHeight;
+
+    ctx.clearRect(0,0,w,h);
+
+    ctx.strokeStyle="#14232d";
+    ctx.lineWidth=1;
+
+    for(let x=0;x<w;x+=70){
+
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,h);
+        ctx.stroke();
+    }
+
+    for(let y=0;y<h;y+=45){
+
+        ctx.beginPath();
+        ctx.moveTo(0,y);
+        ctx.lineTo(w,y);
+        ctx.stroke();
+    }
+
+    const visible=candles.slice(-70);
+
+    let max=-Infinity;
+    let min=Infinity;
+
+    visible.forEach(c=>{
+        max=Math.max(max,c.high);
+        min=Math.min(min,c.low);
+    });
+
+    const padding=25;
+    const range=max-min||1;
+
+    function y(value){
+
+        return padding+
+            (max-value)/range*
+            (h-padding*2);
+    }
+
+    const candleWidth=Math.max(
+        4,
+        (w-20)/visible.length*.62
+    );
+
+    const gap=(w-20)/visible.length;
+
+    visible.forEach((c,i)=>{
+
+        const x=10+i*gap+gap/2;
+
+        const yo=y(c.open);
+        const yc=y(c.close);
+        const yh=y(c.high);
+        const yl=y(c.low);
+
+        const up=c.close>=c.open;
+
+        ctx.strokeStyle=
+            up?"#34d58b":"#ff5e68";
+
+        ctx.fillStyle=
+            up?"#34d58b":"#ff5e68";
+
+        ctx.beginPath();
+        ctx.moveTo(x,yh);
+        ctx.lineTo(x,yl);
+        ctx.stroke();
+
+        const bodyTop=Math.min(yo,yc);
+
+        const bodyHeight=
+            Math.max(1,Math.abs(yc-yo));
+
+        ctx.fillRect(
+            x-candleWidth/2,
+            bodyTop,
+            candleWidth,
+            bodyHeight
+        );
+    });
+
+    const current=symbols[selected].price;
+    const cy=y(current);
+
+    ctx.strokeStyle="#238bc6";
+    ctx.setLineDash([4,4]);
+
+    ctx.beginPath();
+    ctx.moveTo(0,cy);
+    ctx.lineTo(w,cy);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+}
+
+
+/* =========================================================
+   NEW CANDLE
+========================================================= */
+
+function updateCandle(){
+
+    const s=symbols[selected];
+
+    const old=candles.length
+        ?candles[candles.length-1].close
+        :s.price;
+
+    const volatility=
+        selected==="XAUUSD"
+        ?2.5
+        :selected==="USDJPY"
+        ?0.08
+        :0.0008;
+
+    const close=
+        old+(Math.random()-.48)*volatility;
+
+    const high=
+        Math.max(old,close)+Math.random()*volatility;
+
+    const low=
+        Math.min(old,close)-Math.random()*volatility;
+
+    candles.push({
+        open:old,
+        high,
+        low,
+        close
+    });
+
+    if(candles.length>120)
+        candles.shift();
+
+    drawChart();
+}
+
+
+/* =========================================================
+   TIMEFRAME
+========================================================= */
+
+function setTF(button,tf){
+
+    document
+        .querySelectorAll(".tf")
+        .forEach(x=>x.classList.remove("active"));
+
+    button.classList.add("active");
+
+    timeframe=tf;
+
+    generateCandles();
+
+    document.getElementById("chartStats").textContent=
+        " · "+tf+" · "+mode;
+
+    drawChart();
+}
+
+
+/* =========================================================
+   DEMO / REAL
+========================================================= */
+
+function setMode(newMode){
+
+    mode=newMode;
+
+    document.getElementById("demoBtn")
+        .classList.toggle("active",mode==="DEMO");
+
+    document.getElementById("realBtn")
+        .classList.toggle("active",mode==="REAL");
+
+    document.getElementById("tradingMode").textContent=mode;
+
+    document.getElementById("chartStats").textContent=
+        " · "+timeframe+" · "+mode;
+}
+
+
+/* =========================================================
+   CLOCK
+========================================================= */
+
+function clock(){
+
+    document.getElementById("clock").textContent=
+        new Date().toLocaleTimeString();
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+buildOrderSelect();
+generateCandles();
+renderQuotes();
+updateOrderPanel();
+updateAccount();
+resizeCanvas();
+clock();
+orderTypeChanged();
+
+setInterval(moveMarkets,1000);
+setInterval(updateCandle,3000);
+setInterval(clock,1000);
+
+document
+    .getElementById("lots")
+    .addEventListener("input",updateOrderPanel);
+
+</script>
+
+</body>
+ </html>
